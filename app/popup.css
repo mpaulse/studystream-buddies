@@ -1,0 +1,267 @@
+/*
+ * StudyStream Buddies
+ * Copyright (C) 2025 Marlon Paulse
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
+body.dark {
+    --color: white;
+    --premium-user-color: #5a84fa;
+    --follower-color: #d1d2ef;
+    --background-color: #232630;
+    --background-color-contrast: #373e54;
+    --primary-button-background-color: #5a84fa;
+    --primary-button-background-color-hover: #4f72d2;
+    --primary-button-color: white;
+    --spinner-color: #5a84fa;
+}
+
+body.light {
+    --color: #1c1a32;
+    --premium-user-color: #5a84fa;
+    --follower-color: #74737f;
+    --background-color: white;
+    --background-color-contrast: #edf3ff;
+    --primary-button-background-color: #3791fa;
+    --primary-button-background-color-hover: #62aaff;
+    --primary-button-color: white;
+    --spinner-color: #3791fa;
+}
+
+body {
+    font-family: Poppins, sans-serif;
+    color: var(--color);
+    background-color: var(--background-color);
+}
+
+h2 {
+    font-size: 20px;
+    line-height: 32px;
+    font-weight: 550;
+}
+
+#root {
+    min-width: 400px;
+    min-height: 300px;
+}
+
+button {
+    font-size: 14px;
+    font-weight: 550;
+    border: none;
+    border-radius: 12px;
+    min-width: 104px;
+    height: 36px;
+    cursor: pointer;
+}
+
+button.primary {
+    background-color: var(--primary-button-background-color);
+    color: var(--primary-button-color);
+}
+
+button.primary:hover {
+    background-color: var(--primary-button-background-color-hover);
+}
+
+.refresh-button {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: none;
+    min-width: unset;
+}
+.refresh-button img {
+    width: 30px;
+    height: 30px;
+}
+
+#login {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    gap: 20px;
+    height: 100%;
+}
+
+#loading {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    height: 100%;
+}
+
+#no-buddies {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    gap: 20px;
+    height: 100%;
+}
+
+#sad-img {
+    width: 120px;
+    height: 120px;
+}
+
+#buddies-list {
+    margin-top: 50px;
+}
+
+.buddy {
+    background-color: var(--background-color-contrast);
+    border-radius: 16px;
+    display: flex;
+    flex-direction: row;
+    padding: 15px;
+    margin-top: 10px;
+}
+
+.buddy-avatar {
+    width: 60px;
+}
+
+.buddy-info {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    margin-left: 10px;
+    gap: 5px;
+}
+
+.buddy-name-line {
+    display: flex;
+    gap: 5px;
+    align-items: center;
+}
+
+.buddy-name {
+    font-size: 15px;
+}
+
+.buddy-display-name.premium-user {
+    color: var(--premium-user-color);
+}
+
+.buddy-display-name:hover {
+    text-decoration: underline;
+    cursor: pointer;
+}
+
+.buddy-follower {
+    margin-left: 5px;
+}
+
+.buddy-country-flag {
+    width: 25px;
+}
+
+.buddy-room {
+    background-color: var(--background-color);
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    border-radius: 9px;
+    font-size: 13px;
+    font-weight: 400;
+    line-height: 16px;
+    padding: 5px 10px 5px 10px;
+    width: fit-content;
+}
+
+.favourite-indicator::before {
+    content: "\2B50";
+}
+
+.online-indicator {
+    background-color: #50c882;
+    border-radius: 50%;
+    width: 10px;
+    height: 10px;
+}
+
+.buddy-follower {
+    font-weight: 400;
+    font-size: 13px;
+    color: var(--follower-color);
+}
+
+.spinner,
+.spinner div {
+    box-sizing: border-box;
+}
+.spinner {
+    display: inline-block;
+    position: relative;
+    width: 80px;
+    height: 80px;
+    color: var(--spinner-color);
+}
+.spinner div {
+    position: absolute;
+    top: 33.33333px;
+    width: 13.33333px;
+    height: 13.33333px;
+    border-radius: 50%;
+    background: currentColor;
+    animation-timing-function: cubic-bezier(0, 1, 1, 0);
+}
+.spinner div:nth-child(1) {
+    left: 8px;
+    animation: spinner-ellipsis1 0.6s infinite;
+}
+.spinner div:nth-child(2) {
+    left: 8px;
+    animation: spinner-ellipsis2 0.6s infinite;
+}
+.spinner div:nth-child(3) {
+    left: 32px;
+    animation: spinner-ellipsis2 0.6s infinite;
+}
+.spinner div:nth-child(4) {
+    left: 56px;
+    animation: spinner-ellipsis3 0.6s infinite;
+}
+@keyframes spinner-ellipsis1 {
+    0% {
+        transform: scale(0);
+    }
+    100% {
+        transform: scale(1);
+    }
+}
+@keyframes spinner-ellipsis3 {
+    0% {
+        transform: scale(1);
+    }
+    100% {
+        transform: scale(0);
+    }
+}
+@keyframes spinner-ellipsis2 {
+    0% {
+        transform: translate(0, 0);
+    }
+    100% {
+        transform: translate(24px, 0);
+    }
+}
+

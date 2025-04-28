@@ -1,0 +1,42 @@
+{
+  "name": "StudyStream Buddies",
+  "description": "StudyStream Chrome extension for online tracking and notifications of followed users.",
+  "version": "0.1.0",
+  "manifest_version": 3,
+  "icons": {
+    "16": "images/icon-16.png",
+    "32": "images/icon-32.png",
+    "48": "images/icon-48.png",
+    "128": "images/icon-128.png"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "images/icon-16.png",
+      "32": "images/icon-32.png",
+      "48": "images/icon-48.png",
+      "128": "images/icon-128.png"
+    }
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": [ "https://app.studystream.live/*" ],
+      "js": [ "pageobserver.js" ]
+    }
+  ],
+  "host_permissions": [
+    "https://app.studystream.live/*",
+    "https://api.studystream.live/*"
+  ],
+  "permissions": [
+    "alarms",
+    "notifications",
+    "scripting",
+    "storage",
+    "webNavigation"
+  ],
+  "incognito": "split"
+}

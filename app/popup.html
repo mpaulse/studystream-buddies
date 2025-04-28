@@ -1,0 +1,77 @@
+<!--
+ StudyStream Buddies
+ Copyright (C) 2025 Marlon Paulse
+
+ This program is free software: you can redistribute it and/or modify
+ it under the terms of the GNU General Public License as published by
+ the Free Software Foundation, either version 3 of the License, or
+ (at your option) any later version.
+
+ This program is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ GNU General Public License for more details.
+
+ You should have received a copy of the GNU General Public License
+ along with this program.  If not, see <https://www.gnu.org/licenses/>.
+-->
+<html>
+<head>
+    <link rel="stylesheet" href="popup.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap" rel="stylesheet">
+</head>
+<body>
+    <template id="login-template">
+        <div id="login">
+            <h2>Log into StudyStream</h2>
+            <button id="login-button" class="primary">Login</button>
+        </div>
+    </template>
+    <template id="loading-template">
+        <div id="loading">
+            <h2>One moment please...</h2>
+            <div class="spinner">
+                <div></div><div></div><div></div><div></div>
+            </div>
+        </div>
+    </template>
+    <template id="no-buddies-template">
+        <div id="no-buddies">
+            <button class="refresh-button" title="Refresh"><img src="images/refresh.png" /></button>
+            <h2>No online buddies<br/> in cam rooms</h2>
+            <img id="sad-img" src="images/sad.png" />
+        </div>
+    </template>
+    <template id="buddy-template">
+        <div class="buddy">
+            <img class="buddy-avatar" />
+            <div class="buddy-info">
+                <div class="buddy-name-line">
+                    <div class="favourite-indicator"></div>
+                    <img class="premium-indicator" src="https://app.studystream.live/assets/icons/premium-tick.svg" />
+                    <div class="buddy-name">
+                        <span class="buddy-display-name">Ellie</span>
+                        <span class="buddy-full-name">(Ares)</span>
+                    </div>
+                    <img class="buddy-country-flag" />
+                    <div class="buddy-follower">Follower</div>
+                </div>
+                <div class="buddy-room">
+                    <div class="online-indicator"></div><div class="room-name">Focus Room 1</div>
+                </div>
+            </div>
+        </div>
+    </template>
+    <template id="buddies-template">
+        <div id="buddies">
+            <button class="refresh-button" title="Refresh"><img src="images/refresh.png" /></button>
+            <div id="buddies-list"></div>
+        </div>
+    </template>
+    <div id="root">
+    </div>
+    <script src="popup.js"></script>
+</body>
+</html>
