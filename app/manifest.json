@@ -29,7 +29,8 @@
   ],
   "host_permissions": [
     "https://app.studystream.live/*",
-    "https://api.studystream.live/*"
+    "https://api.studystream.live/*",
+    "https://storageaccountstudy9794.blob.core.windows.net/*"
   ],
   "permissions": [
     "alarms",

@@ -90,30 +90,35 @@ async function refreshUsers(raiseEvent = true) {
 
     await stopUsersRefreshAlarm();
     const userList = await getFollowedUsersInRooms(token);
+    userList.sort((a, b) => {
+        if (a.favourite && !b.favourite) {
+            return -1;
+        } else if (!a.favourite && b.favourite) {
+            return 1;
+        } else {
+            return a.displayName.localeCompare(b.displayName);
+        }
+    })
 
     const prevUserList = await getSessionStorageData("usersInRooms");
     await setSessionStorageData("usersInRooms", userList);
 
+    let newUsers = userList;
     if (prevUserList != null) {
-        const newUsers = [];
-        for (let user of userList) {
-            if (prevUserList.find(prevUser => prevUser.id === user.id) == null) {
-                newUsers.push(user);
-            }
-        }
-        if (newUsers.length > 0) {
-            const user = newUsers[0];
-            const message =
-                newUsers.length === 0
-                    ? `${user.displayName} is now online in ${user.room}`
-                    : `${user.displayName} and others are now online in the cam rooms`;
-            await chrome.notifications.create({
-                type: "basic",
-                iconUrl: user.avatarUrl,
-                title: "StudyStream Buddies",
-                message
-            });
-        }
+        newUsers = userList.filter(user => prevUserList.find(prevUser => prevUser.id === user.id) == null);
+    }
+    if (newUsers.length > 0) {
+        const user = newUsers[0];
+        const message =
+            newUsers.length === 1
+                ? `${user.displayName} is now online in ${user.room}`
+                : `${user.displayName} and others are now online in the cam rooms`;
+        await chrome.notifications.create({
+            type: "basic",
+            iconUrl: user.avatarUrl,
+            title: "StudyStream Buddies",
+            message
+        });
     }
 
     await startUsersRefreshAlarm();

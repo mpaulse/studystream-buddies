@@ -72,16 +72,6 @@ function showNoBuddiesPage() {
 }
 
 function showBuddiesPage(buddies) {
-    buddies.sort((a, b) => {
-        if (a.favourite && !b.favourite) {
-            return -1;
-        } else if (!a.favourite && b.favourite) {
-            return 1;
-        } else {
-            return a.displayName.localeCompare(b.displayName);
-        }
-    })
-
     const buddyElements = [];
     for (let buddy of buddies) {
         buddyElements.push(createBuddyElement(buddy));
