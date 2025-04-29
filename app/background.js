@@ -70,9 +70,9 @@ async function handleLoginStatusUpdate() {
 }
 
 async function handleLogin() {
-    await refreshUsers();
     await setSessionStorageData("loggedIn", true);
     chrome.runtime.sendMessage({ type: "LOGIN_EVENT" }).catch(() => {});
+    await refreshUsers();
 }
 
 async function handleLogout() {
@@ -81,68 +81,84 @@ async function handleLogout() {
     chrome.runtime.sendMessage({ type: "LOGOUT_EVENT" }).catch(() => {});
 }
 
-async function refreshUsers(raiseEvent = true) {
-    const token = await getToken();
-    if (token == null) {
-        await handleLogout();
+let userRefreshQueue = null;
+
+async function refreshUsers() {
+    if (userRefreshQueue != null) {
+        await new Promise(resolve => userRefreshQueue.push(resolve));
         return;
     }
 
-    await stopUsersRefreshAlarm();
-    const userList = await getFollowedUsersInRooms(token);
-    userList.sort((a, b) => {
-        if (a.favourite && !b.favourite) {
-            return -1;
-        } else if (!a.favourite && b.favourite) {
-            return 1;
-        } else {
-            return a.displayName.localeCompare(b.displayName);
+    userRefreshQueue = [];
+
+    try {
+        const token = await getToken();
+        if (token == null) {
+            await handleLogout();
+            return;
         }
-    })
 
-    const prevUserList = await getSessionStorageData("usersInRooms");
-    await setSessionStorageData("usersInRooms", userList);
+        await stopUsersRefreshAlarm();
+        const userList = await getFollowedUsersInRooms(token);
+        userList.sort((a, b) => {
+            if (a.favourite && !b.favourite) {
+                return -1;
+            } else if (!a.favourite && b.favourite) {
+                return 1;
+            } else {
+                return a.displayName.localeCompare(b.displayName);
+            }
+        })
 
-    let newUsers = userList;
-    if (prevUserList != null) {
-        newUsers = userList.filter(user => prevUserList.find(prevUser => prevUser.id === user.id) == null);
-    }
-    if (newUsers.length > 0) {
-        const user = newUsers[0];
-        const message =
-            newUsers.length === 1
-                ? `${user.displayName} is now online in ${user.room}`
-                : `${user.displayName} and others are now online in the cam rooms`;
-        await chrome.notifications.create({
-            type: "basic",
-            iconUrl: user.avatarUrl,
-            title: "StudyStream Buddies",
-            message
-        });
-    }
+        const prevUserList = await getSessionStorageData("usersInRooms");
+        await setSessionStorageData("usersInRooms", userList);
 
-    await startUsersRefreshAlarm();
+        let newUsers = userList;
+        if (prevUserList != null) {
+            newUsers = userList.filter(user => prevUserList.find(prevUser => prevUser.id === user.id) == null);
+        }
+        if (newUsers.length > 0) {
+            const user = newUsers[0];
+            const message =
+                newUsers.length === 1
+                    ? `${user.displayName} is now online in ${user.room}`
+                    : `${user.displayName} and others are now online in the cam rooms`;
+            await chrome.notifications.create({
+                type: "basic",
+                iconUrl: user.avatarUrl,
+                title: "StudyStream Buddies",
+                message
+            });
+        }
 
-    if (raiseEvent) {
+        await startUsersRefreshAlarm();
+
         chrome.runtime.sendMessage({type: "USERS_LIST_EVENT", users: userList}).catch(() => {});
+    } finally {
+        userRefreshQueue.forEach(resolve => resolve());
+        userRefreshQueue = null;
     }
 }
 
 async function getUsers(refresh) {
     if (refresh) {
-        await refreshUsers(false);
+        refreshUsers().catch(error => console.error(error));
+    } else {
+        const users = await getSessionStorageData("usersInRooms");
+        if (users != null) {
+            chrome.runtime.sendMessage({type: "USERS_LIST_EVENT", users}).catch(() => {});
+        }
     }
-    return await getSessionStorageData("usersInRooms");
 }
 
 async function getToken() {
-    return await getLocalStorageItem("token");
+    return await getStudyStreamLocalStorageData("token");
 }
 
 async function getTheme() {
     let theme = await getSessionStorageData("theme");
     if (theme == null) {
-        theme = (await getLocalStorageItem("theme"))?.toLowerCase();
+        theme = (await getStudyStreamLocalStorageData("theme"))?.toLowerCase();
         if (theme != null) {
             await setSessionStorageData("theme", theme);
         }
@@ -150,7 +166,7 @@ async function getTheme() {
     return theme;
 }
 
-async function getLocalStorageItem(key) {
+async function getStudyStreamLocalStorageData(key) {
     let value = null;
     const tabs = await chrome.tabs.query({ url: "https://app.studystream.live/*" });
     for (let tab of tabs) {

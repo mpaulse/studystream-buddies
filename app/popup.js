@@ -27,6 +27,9 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
         case "THEME_CHANGE_EVENT":
             setTheme(msg.theme);
             break;
+        case "USERS_LIST_EVENT":
+            showBuddiesPage(msg.users);
+            break;
     }
 
     sendResponse();
@@ -35,8 +38,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 
 async function loadBuddies(refresh = false) {
     showLoadingPage();
-    const buddies = await chrome.runtime.sendMessage({type: "GET_USERS", refresh});
-    showBuddiesPage(buddies);
+    await chrome.runtime.sendMessage({ type: "GET_USERS", refresh });
 }
 
 function onLogout() {
@@ -60,7 +62,10 @@ function showPage(pageElement) {
 }
 
 function showLoginPage() {
-    showPage(document.getElementById("login-template").content.cloneNode(true).firstElementChild);
+    const loginRootElement = document.getElementById("login-template").content.cloneNode(true).firstElementChild;
+    const loginButton = loginRootElement.querySelector("#login-button");
+    loginButton.addEventListener("click", onLoginButtonClick);
+    showPage(loginRootElement);
 }
 
 function showLoadingPage() {
@@ -68,21 +73,21 @@ function showLoadingPage() {
 }
 
 function showNoBuddiesPage() {
-    showPage(document.getElementById("no-buddies-template").content.cloneNode(true).firstElementChild);
+    const noBuddiesRootElement = document.getElementById("no-buddies-template").content.cloneNode(true).firstElementChild;
+    const refreshButton = noBuddiesRootElement.querySelector(".refresh-button");
+    refreshButton.addEventListener("click", onRefreshButtonClick);
+    showPage(noBuddiesRootElement);
 }
 
 function showBuddiesPage(buddies) {
-    const buddyElements = [];
-    for (let buddy of buddies) {
-        buddyElements.push(createBuddyElement(buddy));
-    }
-
-    const buddiesRootElement
-        = document.getElementById("buddies-template").content.cloneNode(true).firstElementChild;
-    const buddiesListElement = buddiesRootElement.querySelector("#buddies-list");
-    buddiesListElement.replaceChildren(...buddyElements);
-
+    const buddyElements = buddies.map(buddy => createBuddyElement(buddy));
     if (buddyElements.length > 0) {
+        const buddiesRootElement
+            = document.getElementById("buddies-template").content.cloneNode(true).firstElementChild;
+        const buddiesListElement = buddiesRootElement.querySelector("#buddies-list");
+        buddiesListElement.replaceChildren(...buddyElements);
+        const refreshButton = buddiesRootElement.querySelector(".refresh-button");
+        refreshButton.addEventListener("click", onRefreshButtonClick);
         showPage(buddiesRootElement);
     } else {
         showNoBuddiesPage();
@@ -138,17 +143,6 @@ function removeDescendent(element, descendentSelector) {
 
 function setTheme(theme) {
     document.body.className = theme;
-}
-
-
-let template = document.getElementById("login-template");
-let button = template.content.querySelector("#login-button");
-button.addEventListener("click", onLoginButtonClick);
-
-for (let templateId of ["buddies-template", "no-buddies-template", ]) {
-    template = document.getElementById(templateId);
-    button = template.content.querySelector(".refresh-button");
-    button.addEventListener("click", onRefreshButtonClick);
 }
 
 (async () => {
