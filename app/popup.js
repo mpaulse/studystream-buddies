@@ -129,7 +129,7 @@ function createBuddyElement(buddy) {
         removeDescendent(buddyElement, ".buddy-follower");
     }
 
-    buddyElement.querySelector(".room-name").textContent = buddy.room;
+    buddyElement.querySelector(".room-name").textContent = buddy.room.name;
 
     return buddyElement;
 }
