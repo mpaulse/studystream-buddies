@@ -20,7 +20,9 @@ themeObserver = new MutationObserver(async (mutations) => {
     for (let mutation of mutations) {
         if (mutation.attributeName === "class") {
             const theme = mutation.target.className.includes("dark") ? "dark" : "light";
-            await chrome.runtime?.sendMessage({ type: "PAGE_UPDATE_EVENT", theme });
+            if (chrome.runtime.id != null) {
+                await chrome.runtime.sendMessage({type: "PAGE_UPDATE_EVENT", theme});
+            }
         }
     }
 });
