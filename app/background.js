@@ -116,18 +116,21 @@ async function refreshUsers() {
         let newUsers = userList;
         if (prevUserList != null) {
             newUsers = userList.filter(user => prevUserList.find(prevUser => prevUser.id === user.id) == null);
-        }
-        if (newUsers.length > 0) {
-            const user = newUsers[0];
-            const message =
-                newUsers.length === 1
-                    ? `${user.displayName} is now online in ${user.room}`
-                    : `${user.displayName} and others are now online in the cam rooms`;
+            for (let user of newUsers) {
+                await chrome.notifications.create({
+                    type: "basic",
+                    iconUrl: user.avatarUrl,
+                    title: "StudyStream Buddies",
+                    message: `${user.displayName} is now online in ${user.room.name}`
+                });
+            }
+        } else {
+            const user = userList[0];
             await chrome.notifications.create({
                 type: "basic",
                 iconUrl: user.avatarUrl,
                 title: "StudyStream Buddies",
-                message
+                message: `${user.displayName} and others are online in the cam rooms`
             });
         }
 
@@ -269,7 +272,7 @@ async function getFollowedUsersInRooms(token) {
 }
 
 async function startUsersRefreshAlarm() {
-    await chrome.alarms.create(getUsersRefreshAlarmName(), { delayInMinutes: 5 });
+    await chrome.alarms.create(getUsersRefreshAlarmName(), { delayInMinutes: 1 });
 }
 
 async function stopUsersRefreshAlarm() {
