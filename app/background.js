@@ -16,11 +16,11 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-chrome.webNavigation.onCompleted.addListener(
-    async () => {
-        await handleLoginStatusUpdate();
-    },
-    { url: [{ hostEquals: "app.studystream.live" }] });
+chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
+    if (changeInfo.status === "complete" && tab.url?.startsWith("https://app.studystream.live")) {
+        await onPageLoaded();
+    }
+});
 
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     switch (msg.type) {
@@ -43,8 +43,10 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 });
 
 chrome.alarms.onAlarm.addListener(async (alarm) => {
-    if (alarm.name === getUsersRefreshAlarmName()) {
+    if (alarm.name.startsWith("refreshUsers")) {
         await refreshUsers();
+    } else if (alarm.name.startsWith("checkPinningUsers")) {
+        await checkPinningUsers();
     }
 });
 
@@ -59,31 +61,55 @@ async function isLoggedIn() {
     return await getSessionStorageData("loggedIn");
 }
 
-async function handleLoginStatusUpdate() {
+async function onPageLoaded() {
     const token = await getToken();
     const prevLoggedIn = await getSessionStorageData("loggedIn");
-    if (token != null && !prevLoggedIn) {
-        await handleLogin();
+    if (token != null) {
+        if (!prevLoggedIn) {
+            await onLogin(token);
+        }
+
+        const currentUser = await getCurrentUserInfo(token);
+        await setSessionStorageData("premiumUser", currentUser.premiumUser);
+
+        const prevRoomId = await getSessionStorageData("roomId");
+        if (currentUser.room.id != null && currentUser.room.id !== prevRoomId) {
+            await onRoomEntered(currentUser.room.id, token);
+        } else if (currentUser.room.id == null && prevRoomId != null) {
+            await onRoomExit();
+        }
     } else if (token == null && prevLoggedIn) {
-        await handleLogout();
+        await onLogout();
     }
 }
 
-async function handleLogin() {
+async function onLogin(token) {
     await setSessionStorageData("loggedIn", true);
     chrome.runtime.sendMessage({ type: "LOGIN_EVENT" }).catch(() => {});
-    await refreshUsers();
+    await refreshUsers(token);
 }
 
-async function handleLogout() {
-    await stopUsersRefreshAlarm();
+async function onLogout() {
+    await chrome.alarms.clearAll();
     await removeSessionStorageData("loggedIn");
+    await removeSessionStorageData("premiumUser");
+    await removeSessionStorageData("roomId");
     chrome.runtime.sendMessage({ type: "LOGOUT_EVENT" }).catch(() => {});
+}
+
+async function onRoomEntered(roomId, token) {
+    await setSessionStorageData("roomId", roomId);
+    await checkPinningUsers(token);
+}
+
+async function onRoomExit() {
+    await stopAlarm("checkPinningUsers");
+    await removeSessionStorageData("roomId");
 }
 
 let usersRefreshQueue = null;
 
-async function refreshUsers() {
+async function refreshUsers(token = null) {
     if (usersRefreshQueue != null) {
         await new Promise(resolve => usersRefreshQueue.push(resolve));
         return;
@@ -92,13 +118,15 @@ async function refreshUsers() {
     usersRefreshQueue = [];
 
     try {
-        const token = await getToken();
         if (token == null) {
-            await handleLogout();
-            return;
+            token = await getToken();
+            if (token == null) {
+                await onLogout();
+                return;
+            }
         }
 
-        await stopUsersRefreshAlarm();
+        await stopAlarm("refreshUsers");
         const userList = await getFollowedUsersInRooms(token);
         userList.sort((a, b) => {
             if (a.favourite && !b.favourite) {
@@ -138,7 +166,7 @@ async function refreshUsers() {
             });
         }
 
-        await startUsersRefreshAlarm();
+        await startAlarm("refreshUsers");
 
         chrome.runtime.sendMessage({type: "USERS_LIST_EVENT", users: userList}).catch(() => {});
     } finally {
@@ -156,6 +184,46 @@ async function getUsers(refresh) {
             chrome.runtime.sendMessage({type: "USERS_LIST_EVENT", users}).catch(() => {});
         }
     }
+}
+
+async function checkPinningUsers(token = null) {
+    if ((await getSessionStorageData("premiumUser")) !== true) {
+        return;
+    }
+    if (token == null) {
+        token = await getToken();
+        if (token == null) {
+            return;
+        }
+    }
+
+    await stopAlarm("checkPinningUsers");
+
+    const pinningUsers = await getPinningUsers(token);
+    const prevPinningUserIds = await getSessionStorageData("pinningUserIds");
+    await setSessionStorageData("pinningUserIds", pinningUsers.map(user => user.id));
+
+    let newPinningUsers = pinningUsers;
+    if (prevPinningUserIds != null) {
+        newPinningUsers = pinningUsers.filter(user => prevPinningUserIds.find(id => id === user.id) == null);
+    }
+    for (let user of newPinningUsers) {
+        await chrome.notifications.create({
+            type: "basic",
+            iconUrl: user.avatarUrl ?? "images/icon-128.png",
+            title: "StudyStream Buddies",
+            message: `${user.displayName} is now pinning you`
+        });
+    }
+
+    await startAlarm("checkPinningUsers");
+}
+
+async function getPinningUsers(token) {
+    const response = await fetch(
+        "https://api.studystream.live/api/users/me/premium/pinned-by-users-now",
+        { method: "GET", headers: { "Authorization": `Bearer ${token}` } });
+    return response.ok ? await response.json() : [];
 }
 
 async function getToken() {
@@ -236,6 +304,7 @@ async function getUserInfo(userId, token) {
         { method: "GET", headers: { "Authorization": `Bearer ${token}` } });
     let user = response.ok ? await response.json() : null;
     if (user != null) {
+        const rooms = await getSessionStorageData("rooms");
         user = {
             id: user.id,
             displayName: user.displayName,
@@ -243,7 +312,8 @@ async function getUserInfo(userId, token) {
             countryCode: user.countryTwoLetterCode,
             avatarUrl: user.avatarThumbUrl ?? "images/icon-128.png",
             follower: user.followsMe,
-            premiumUser: user.includePremiumFeatures
+            premiumUser: user.includePremiumFeatures,
+            room: rooms?.find(room => room.id === user.currentRoomId)
         }
     }
     return user;
@@ -258,7 +328,6 @@ async function getFollowedUsersInRooms(token) {
             const followedUserIds = await getFollowedUserIdsInRoom(room.id, token);
             for (let userId of followedUserIds) {
                 const user = await getUserInfo(userId, token);
-                user.room = room;
                 user.favourite = favouriteUserIds.includes(user.id);
                 followedUsers.push(user);
             }
@@ -267,20 +336,18 @@ async function getFollowedUsersInRooms(token) {
     return followedUsers;
 }
 
-async function startUsersRefreshAlarm() {
-    await chrome.alarms.create(getUsersRefreshAlarmName(), { delayInMinutes: 1 });
-}
-
-async function stopUsersRefreshAlarm() {
-    await chrome.alarms.clear(getUsersRefreshAlarmName());
-}
-
-function getUsersRefreshAlarmName() {
-    let name = "usersRefresh";
+async function startAlarm(alarmName, delayInMinutes = 1) {
     if (chrome.extension.inIncognitoContext) {
-        name += "-incognito";
+        alarmName += "-incognito";
     }
-    return name;
+    await chrome.alarms.create(alarmName, { delayInMinutes });
+}
+
+async function stopAlarm(alarmName) {
+    if (chrome.extension.inIncognitoContext) {
+        alarmName += "-incognito";
+    }
+    await chrome.alarms.clear(alarmName);
 }
 
 async function getRoomInfo() {
@@ -299,7 +366,14 @@ async function getRoomInfo() {
     await setSessionStorageData("rooms", rooms);
 }
 
+async function getCurrentUserInfo(token) {
+    const response = await fetch(
+        "https://api.studystream.live/api/accounts/me",
+        { method: "GET", headers: { "Authorization": `Bearer ${token}` } });
+    return response.ok ? await getUserInfo((await response.json()).id, token) : null;
+}
+
 (async () => {
     await getRoomInfo();
-    await handleLoginStatusUpdate();
+    await onPageLoaded();
 })();
