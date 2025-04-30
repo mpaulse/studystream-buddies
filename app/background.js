@@ -226,20 +226,13 @@ async function getFavouriteUserIds(token) {
     return favourites.map(user => user?.favoriteUser?.id).filter(id => id != null);
 }
 
-async function getUserInfo(userIds, token) {
+async function getUserInfo(userId, token) {
     const response = await fetch(
-        "https://api.studystream.live/api/users/profiles",
-        {
-            method: "POST",
-            headers: {
-                "Authorization": `Bearer ${token}`,
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify(userIds)
-        });
-    const users = response.ok ? await response.json() : [];
-    return users.map(user => {
-        return {
+        `https://api.studystream.live/api/users/${userId}`,
+        { method: "GET", headers: { "Authorization": `Bearer ${token}` } });
+    let user = response.ok ? await response.json() : null;
+    if (user != null) {
+        user = {
             id: user.id,
             displayName: user.displayName,
             fullName: user.fullName?.trim(),
@@ -248,7 +241,8 @@ async function getUserInfo(userIds, token) {
             follower: user.followsMe,
             premiumUser: user.includePremiumFeatures
         }
-    });
+    }
+    return user;
 }
 
 async function getFollowedUsersInRooms(token) {
@@ -258,13 +252,11 @@ async function getFollowedUsersInRooms(token) {
         const favouriteUserIds = await getFavouriteUserIds(token);
         for (let room of rooms) {
             const followedUserIds = await getFollowedUserIdsInRoom(room.id, token);
-            if (followedUserIds.length > 0) {
-                const users = await getUserInfo(followedUserIds, token);
-                users.forEach(user => {
-                    user.room = room;
-                    user.favourite = favouriteUserIds.includes(user.id);
-                    followedUsers.push(user);
-                })
+            for (let userId of followedUserIds) {
+                const user = await getUserInfo(userId, token);
+                user.room = room;
+                user.favourite = favouriteUserIds.includes(user.id);
+                followedUsers.push(user);
             }
         }
     }
