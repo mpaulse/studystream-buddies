@@ -119,12 +119,14 @@ async function refreshUsers() {
                 return prevUserInfo == null || prevUserInfo.room.id !== user.room.id;
             });
             for (let user of updatedUsers) {
-                await chrome.notifications.create({
-                    type: "basic",
-                    iconUrl: user.avatarUrl,
-                    title: "StudyStream Buddies",
-                    message: `${user.displayName} is now online in ${user.room.name}`
-                });
+                if (user.favourite) {
+                    await chrome.notifications.create({
+                        type: "basic",
+                        iconUrl: user.avatarUrl,
+                        title: "StudyStream Buddies",
+                        message: `${user.displayName} is now online in ${user.room.name}`
+                    });
+                }
             }
         } else {
             const user = userList[0];
