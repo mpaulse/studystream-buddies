@@ -113,10 +113,12 @@ async function refreshUsers() {
         const prevUserList = await getSessionStorageData("usersInRooms");
         await setSessionStorageData("usersInRooms", userList);
 
-        let newUsers = userList;
         if (prevUserList != null) {
-            newUsers = userList.filter(user => prevUserList.find(prevUser => prevUser.id === user.id) == null);
-            for (let user of newUsers) {
+            const updatedUsers = userList.filter(user => {
+                const prevUserInfo = prevUserList.find(prevUser => prevUser.id === user.id)
+                return prevUserInfo == null || prevUserInfo.room.id !== user.room.id;
+            });
+            for (let user of updatedUsers) {
                 await chrome.notifications.create({
                     type: "basic",
                     iconUrl: user.avatarUrl,
