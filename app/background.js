@@ -45,8 +45,6 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 chrome.alarms.onAlarm.addListener(async (alarm) => {
     if (alarm.name.startsWith("refreshUsers")) {
         await refreshUsers();
-    } else if (alarm.name.startsWith("checkPinningUsers")) {
-        await checkPinningUsers();
     }
 });
 
@@ -65,18 +63,18 @@ async function onPageLoaded() {
     const token = await getToken();
     const prevLoggedIn = await getSessionStorageData("loggedIn");
     if (token != null) {
-        if (!prevLoggedIn) {
-            await onLogin(token);
-        }
-
         const currentUser = await getCurrentUserInfo(token);
         await setSessionStorageData("premiumUser", currentUser.premiumUser);
 
         const prevRoomId = await getSessionStorageData("roomId");
         if (currentUser.room?.id != null && currentUser.room.id !== prevRoomId) {
-            await onRoomEntered(currentUser.room.id, token);
+            await setSessionStorageData("roomId", currentUser.room.id);
         } else if (currentUser.room?.id == null && prevRoomId != null) {
-            await onRoomExit();
+            await removeSessionStorageData("roomId");
+        }
+
+        if (!prevLoggedIn) {
+            await onLogin(token);
         }
     } else if (token == null && prevLoggedIn) {
         await onLogout();
@@ -95,16 +93,6 @@ async function onLogout() {
     await removeSessionStorageData("premiumUser");
     await removeSessionStorageData("roomId");
     chrome.runtime.sendMessage({ type: "LOGOUT_EVENT" }).catch(() => {});
-}
-
-async function onRoomEntered(roomId, token) {
-    await setSessionStorageData("roomId", roomId);
-    await checkPinningUsers(token);
-}
-
-async function onRoomExit() {
-    await stopAlarm("checkPinningUsers");
-    await removeSessionStorageData("roomId");
 }
 
 let usersRefreshQueue = null;
@@ -136,11 +124,9 @@ async function refreshUsers(token = null) {
             } else {
                 return a.displayName.localeCompare(b.displayName);
             }
-        })
+        });
 
         const prevUserList = await getSessionStorageData("usersInRooms");
-        await setSessionStorageData("usersInRooms", userList);
-
         if (prevUserList != null) {
             const updatedUsers = userList.filter(user => {
                 const prevUserInfo = prevUserList.find(prevUser => prevUser.id === user.id)
@@ -152,7 +138,7 @@ async function refreshUsers(token = null) {
                         type: "basic",
                         iconUrl: user.avatarUrl,
                         title: "StudyStream Buddies",
-                        message: `${user.displayName} is now online in ${user.room.name}`
+                        message: `${user.displayName} is now online in ${user.room.name}.`
                     });
                 }
             }
@@ -162,9 +148,16 @@ async function refreshUsers(token = null) {
                 type: "basic",
                 iconUrl: user.avatarUrl,
                 title: "StudyStream Buddies",
-                message: `${user.displayName} and others are online in the cam rooms`
+                message: `${user.displayName} and others are online in the cam rooms.`
             });
         }
+
+        const pinningUserIds = await checkPinningUsers(token);
+        if (pinningUserIds.length > 0) {
+            userList.forEach(user => user.pinner = pinningUserIds.includes(user.id));
+        }
+
+        await setSessionStorageData("usersInRooms", userList);
 
         await startAlarm("refreshUsers");
 
@@ -186,22 +179,14 @@ async function getUsers(refresh) {
     }
 }
 
-async function checkPinningUsers(token = null) {
-    if ((await getSessionStorageData("premiumUser")) !== true) {
-        return;
+async function checkPinningUsers(token) {
+    if ((await getSessionStorageData("premiumUser")) !== true
+            || (await getSessionStorageData("roomId")) == null) {
+        return [];
     }
-    if (token == null) {
-        token = await getToken();
-        if (token == null) {
-            return;
-        }
-    }
-
-    await stopAlarm("checkPinningUsers");
 
     const pinningUsers = await getPinningUsers(token);
     const prevPinningUserIds = await getSessionStorageData("pinningUserIds");
-    await setSessionStorageData("pinningUserIds", pinningUsers.map(user => user.id));
 
     let newPinningUsers = pinningUsers;
     if (prevPinningUserIds != null) {
@@ -212,11 +197,13 @@ async function checkPinningUsers(token = null) {
             type: "basic",
             iconUrl: user.avatarUrl ?? "images/icon-128.png",
             title: "StudyStream Buddies",
-            message: `${user.displayName} is now pinning you`
+            message: `${user.displayName} is now pinning you.`
         });
     }
 
-    await startAlarm("checkPinningUsers");
+    const pinningUserIds = pinningUsers.map(user => user.id);
+    await setSessionStorageData("pinningUserIds", pinningUserIds);
+    return pinningUserIds;
 }
 
 async function getPinningUsers(token) {
@@ -328,8 +315,10 @@ async function getFollowedUsersInRooms(token) {
             const followedUserIds = await getFollowedUserIdsInRoom(room.id, token);
             for (let userId of followedUserIds) {
                 const user = await getUserInfo(userId, token);
-                user.favourite = favouriteUserIds.includes(user.id);
-                followedUsers.push(user);
+                if (user.room != null) { // Handle user leaving room just before getUserInfo() is called
+                    user.favourite = favouriteUserIds.includes(user.id);
+                    followedUsers.push(user);
+                }
             }
         }
     }

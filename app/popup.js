@@ -96,7 +96,11 @@ function showBuddiesPage(buddies) {
 
 function createBuddyElement(buddy) {
     const buddyElement
-        = document.getElementById("buddy-template").content.cloneNode(true).firstElementChild
+        = document.getElementById("buddy-template").content.cloneNode(true).firstElementChild;
+    if (buddy.pinner) {
+        buddyElement.classList.add("pinner");
+    }
+
     buddyElement.querySelector(".buddy-avatar").src = buddy.avatarUrl;
 
     if (!buddy.favourite) {

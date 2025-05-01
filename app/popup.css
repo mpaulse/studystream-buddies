@@ -26,6 +26,7 @@ body.dark {
     --primary-button-background-color-hover: #4f72d2;
     --primary-button-color: white;
     --spinner-color: #5a84fa;
+    --pinner-outline-color: #5a84fa;
 }
 
 body.light {
@@ -38,6 +39,7 @@ body.light {
     --primary-button-background-color-hover: #62aaff;
     --primary-button-color: white;
     --spinner-color: #3791fa;
+    --pinner-outline-color: #5a84fa;
 }
 
 body {
@@ -132,6 +134,10 @@ button.primary:hover {
     flex-direction: row;
     padding: 15px;
     margin-top: 10px;
+}
+
+.buddy.pinner {
+    outline: 2px solid var(--pinner-outline-color);
 }
 
 .buddy-avatar {
