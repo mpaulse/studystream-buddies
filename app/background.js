@@ -37,8 +37,6 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
             getUsers(msg.refresh).then(result => sendResponse(result)).catch(error => console.error(error));
             return true;
     }
-
-    sendResponse();
     return false;
 });
 
@@ -220,10 +218,8 @@ async function getToken() {
 async function getTheme() {
     let theme = await getSessionStorageData("theme");
     if (theme == null) {
-        theme = (await getStudyStreamLocalStorageData("theme"))?.toLowerCase();
-        if (theme != null) {
-            await setSessionStorageData("theme", theme);
-        }
+        theme = (await getStudyStreamLocalStorageData("theme"))?.toLowerCase() ?? "dark";
+        await setSessionStorageData("theme", theme);
     }
     return theme;
 }

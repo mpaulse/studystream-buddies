@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+chrome.runtime.onMessage.addListener(msg => {
     switch (msg.type) {
         case "LOGIN_EVENT":
             loadBuddies().catch(error => console.error(error));
@@ -31,8 +31,6 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
             showBuddiesPage(msg.users);
             break;
     }
-
-    sendResponse();
     return false;
 });
 
@@ -150,10 +148,10 @@ function setTheme(theme) {
 }
 
 (async () => {
-    const theme = await chrome.runtime.sendMessage({type: "GET_THEME"}) ?? "dark";
+    const theme = await chrome.runtime.sendMessage({ type: "GET_THEME" });
     setTheme(theme);
 
-    const loggedIn = await chrome.runtime.sendMessage({type: "IS_LOGGED_IN"});
+    const loggedIn = await chrome.runtime.sendMessage({ type: "IS_LOGGED_IN" });
     if (!loggedIn) {
         onLogout();
     } else {
