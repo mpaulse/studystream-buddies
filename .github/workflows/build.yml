@@ -1,0 +1,17 @@
+name: StudyStream Buddies release build
+on:
+  push:
+    branches:
+      - master
+    tags:
+      - "v*"
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: marvinpinto/action-automatic-releases@latest
+        with:
+          repo_token: "${{ secrets.GITHUB_TOKEN }}"
+          prerelease: false
