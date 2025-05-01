@@ -73,9 +73,9 @@ async function onPageLoaded() {
         await setSessionStorageData("premiumUser", currentUser.premiumUser);
 
         const prevRoomId = await getSessionStorageData("roomId");
-        if (currentUser.room.id != null && currentUser.room.id !== prevRoomId) {
+        if (currentUser.room?.id != null && currentUser.room.id !== prevRoomId) {
             await onRoomEntered(currentUser.room.id, token);
-        } else if (currentUser.room.id == null && prevRoomId != null) {
+        } else if (currentUser.room?.id == null && prevRoomId != null) {
             await onRoomExit();
         }
     } else if (token == null && prevLoggedIn) {
