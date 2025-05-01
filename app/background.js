@@ -146,7 +146,7 @@ async function refreshUsers(token = null) {
                 type: "basic",
                 iconUrl: user.avatarUrl,
                 title: "StudyStream Buddies",
-                message: `${user.displayName} and others are online in the cam rooms.`
+                message: `${user.displayName} and others are online in the focus rooms.`
             });
         }
 

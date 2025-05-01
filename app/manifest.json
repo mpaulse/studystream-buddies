@@ -1,7 +1,7 @@
 {
   "name": "StudyStream Buddies",
   "description": "StudyStream Chrome extension for online tracking and notifications of followed users.",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "manifest_version": 3,
   "icons": {
     "16": "images/icon-16.png",
