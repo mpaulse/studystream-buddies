@@ -1,6 +1,6 @@
 {
   "name": "StudyStream Buddies",
-  "description": "StudyStream Chrome extension for online tracking and notifications of followed users.",
+  "description": "Shows online followed users in StudyStream focus rooms and displays notifications.",
   "version": "0.3.2",
   "manifest_version": 3,
   "icons": {
