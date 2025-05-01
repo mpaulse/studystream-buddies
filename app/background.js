@@ -144,7 +144,7 @@ async function refreshUsers(token = null) {
         if (prevUserList != null) {
             const updatedUsers = userList.filter(user => {
                 const prevUserInfo = prevUserList.find(prevUser => prevUser.id === user.id)
-                return prevUserInfo == null || prevUserInfo.room.id !== user.room.id;
+                return prevUserInfo == null || prevUserInfo.room?.id !== user.room?.id;
             });
             for (let user of updatedUsers) {
                 if (user.favourite) {

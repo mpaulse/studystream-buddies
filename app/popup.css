@@ -53,7 +53,7 @@ h2 {
 }
 
 #root {
-    min-width: 400px;
+    width: 600px;
     min-height: 300px;
 }
 
@@ -79,13 +79,12 @@ button.primary:hover {
 .refresh-button {
     position: absolute;
     top: 10px;
-    right: 10px;
+    right: 0;
     background: none;
     min-width: unset;
 }
 .refresh-button img {
-    width: 30px;
-    height: 30px;
+    width: 20px;
 }
 
 #login {
@@ -123,7 +122,7 @@ button.primary:hover {
 }
 
 #buddies-list {
-    margin-top: 50px;
+    margin-top: 45px;
 }
 
 .buddy {
@@ -151,6 +150,7 @@ button.primary:hover {
     display: flex;
     gap: 5px;
     align-items: center;
+    white-space: nowrap;
 }
 
 .buddy-name {

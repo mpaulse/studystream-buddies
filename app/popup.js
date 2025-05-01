@@ -146,7 +146,7 @@ function setTheme(theme) {
 }
 
 (async () => {
-    const theme = await chrome.runtime.sendMessage({type: "GET_THEME"})
+    const theme = await chrome.runtime.sendMessage({type: "GET_THEME"}) ?? "dark";
     setTheme(theme);
 
     const loggedIn = await chrome.runtime.sendMessage({type: "IS_LOGGED_IN"});
