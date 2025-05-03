@@ -336,7 +336,7 @@ async function getFollowedUsersInRooms(token) {
             const followedUserIds = await getFollowedUserIdsInRoom(room.id, token);
             for (let userId of followedUserIds) {
                 const user = await getUserInfo(userId, token);
-                if (user.room != null) { // Handle user leaving room just before getUserInfo() is called
+                if (user?.room != null) { // Handle user leaving room just before getUserInfo() is called
                     user.favourite = favouriteUserIds.includes(user.id);
                     followedUsers.push(user);
                 }
