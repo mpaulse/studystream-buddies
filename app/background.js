@@ -46,6 +46,13 @@ chrome.alarms.onAlarm.addListener(async (alarm) => {
     }
 });
 
+class PremiumUserFeatureForbidden extends Error {
+    constructor(message) {
+        super(message);
+        this.name = "PremiumUserFeatureForbidden";
+    }
+}
+
 async function onPageUpdate(event) {
     if (event.theme != null && event.theme !== await getSessionStorageData("theme")) {
         await setSessionStorageData("theme", event.theme);
@@ -61,22 +68,28 @@ async function onPageLoaded() {
     const token = await getToken();
     const prevLoggedIn = await getSessionStorageData("loggedIn");
     if (token != null) {
-        const currentUser = await getCurrentUserInfo(token);
-        await setSessionStorageData("premiumUser", currentUser.premiumUser);
-
-        const prevRoomId = await getSessionStorageData("roomId");
-        if (currentUser.room?.id != null && currentUser.room.id !== prevRoomId) {
-            await setSessionStorageData("roomId", currentUser.room.id);
-        } else if (currentUser.room?.id == null && prevRoomId != null) {
-            await removeSessionStorageData("roomId");
-        }
-
+        await setSessionStorageData("premiumUser", await isPremiumSubscription(token));
         if (!prevLoggedIn) {
             await onLogin(token);
         }
     } else if (token == null && prevLoggedIn) {
         await onLogout();
     }
+}
+
+async function getCurrentRoom() {
+    const rooms = await getSessionStorageData("rooms");
+    if (rooms != null) {
+        const tabs = await chrome.tabs.query({url: "https://app.studystream.live/*"});
+        for (let tab of tabs) {
+            for (let room of rooms) {
+                if (room.url === tab.url) {
+                    return room;
+                }
+            }
+        }
+    }
+    return null;
 }
 
 async function onLogin(token) {
@@ -89,7 +102,6 @@ async function onLogout() {
     await chrome.alarms.clearAll();
     await removeSessionStorageData("loggedIn");
     await removeSessionStorageData("premiumUser");
-    await removeSessionStorageData("roomId");
     chrome.runtime.sendMessage({ type: "LOGOUT_EVENT" }).catch(() => {});
 }
 
@@ -114,40 +126,42 @@ async function refreshUsers(token = null) {
 
         await stopAlarm("refreshUsers");
         const userList = await getFollowedUsersInRooms(token);
-        userList.sort((a, b) => {
-            if (a.favourite && !b.favourite) {
-                return -1;
-            } else if (!a.favourite && b.favourite) {
-                return 1;
-            } else {
-                return a.displayName.localeCompare(b.displayName);
-            }
-        });
-
-        const prevUserList = await getSessionStorageData("usersInRooms");
-        if (prevUserList != null) {
-            const updatedUsers = userList.filter(user => {
-                const prevUserInfo = prevUserList.find(prevUser => prevUser.id === user.id)
-                return prevUserInfo == null || prevUserInfo.room?.id !== user.room?.id;
-            });
-            for (let user of updatedUsers) {
-                if (user.favourite) {
-                    await chrome.notifications.create({
-                        type: "basic",
-                        iconUrl: user.avatarUrl,
-                        title: "StudyStream Buddies",
-                        message: `${user.displayName} is now online in ${user.room.name}.`
-                    });
+        if (userList.length > 0) {
+            userList.sort((a, b) => {
+                if (a.favourite && !b.favourite) {
+                    return -1;
+                } else if (!a.favourite && b.favourite) {
+                    return 1;
+                } else {
+                    return a.displayName.localeCompare(b.displayName);
                 }
-            }
-        } else {
-            const user = userList[0];
-            await chrome.notifications.create({
-                type: "basic",
-                iconUrl: user.avatarUrl,
-                title: "StudyStream Buddies",
-                message: `${user.displayName} and others are online in the focus rooms.`
             });
+
+            const prevUserList = await getSessionStorageData("usersInRooms");
+            if (prevUserList != null) {
+                const updatedUsers = userList.filter(user => {
+                    const prevUserInfo = prevUserList.find(prevUser => prevUser.id === user.id)
+                    return prevUserInfo == null || prevUserInfo.room?.id !== user.room?.id;
+                });
+                for (let user of updatedUsers) {
+                    if (user.favourite) {
+                        await chrome.notifications.create({
+                            type: "basic",
+                            iconUrl: user.avatarUrl,
+                            title: "StudyStream Buddies",
+                            message: `${user.displayName} is now online in ${user.room.name}.`
+                        });
+                    }
+                }
+            } else {
+                const user = userList[0];
+                await chrome.notifications.create({
+                    type: "basic",
+                    iconUrl: user.avatarUrl,
+                    title: "StudyStream Buddies",
+                    message: `${user.displayName} and others are online in the focus rooms.`
+                });
+            }
         }
 
         const pinningUserIds = await checkPinningUsers(token);
@@ -179,35 +193,46 @@ async function getUsers(refresh) {
 
 async function checkPinningUsers(token) {
     if ((await getSessionStorageData("premiumUser")) !== true
-            || (await getSessionStorageData("roomId")) == null) {
+            || (await getCurrentRoom()) == null) {
         return [];
     }
 
-    const pinningUsers = await getPinningUsers(token);
-    const prevPinningUserIds = await getSessionStorageData("pinningUserIds");
+    try {
+        const pinningUsers = await getPinningUsers(token);
+        const prevPinningUserIds = await getSessionStorageData("pinningUserIds");
 
-    let newPinningUsers = pinningUsers;
-    if (prevPinningUserIds != null) {
-        newPinningUsers = pinningUsers.filter(user => prevPinningUserIds.find(id => id === user.id) == null);
-    }
-    for (let user of newPinningUsers) {
-        await chrome.notifications.create({
-            type: "basic",
-            iconUrl: user.avatarUrl ?? "images/icon-128.png",
-            title: "StudyStream Buddies",
-            message: `${user.displayName} is now pinning you.`
-        });
-    }
+        let newPinningUsers = pinningUsers;
+        if (prevPinningUserIds != null) {
+            newPinningUsers = pinningUsers.filter(user => prevPinningUserIds.find(id => id === user.id) == null);
+        }
+        for (let user of newPinningUsers) {
+            await chrome.notifications.create({
+                type: "basic",
+                iconUrl: user.avatarUrl ?? "images/icon-128.png",
+                title: "StudyStream Buddies",
+                message: `${user.displayName} is now pinning you.`
+            });
+        }
 
-    const pinningUserIds = pinningUsers.map(user => user.id);
-    await setSessionStorageData("pinningUserIds", pinningUserIds);
-    return pinningUserIds;
+        const pinningUserIds = pinningUsers.map(user => user.id);
+        await setSessionStorageData("pinningUserIds", pinningUserIds);
+        return pinningUserIds;
+    } catch (error) {
+        if (error instanceof PremiumUserFeatureForbidden) {
+            await removeSessionStorageData("premiumUser");
+        } else {
+            throw error;
+        }
+    }
 }
 
 async function getPinningUsers(token) {
     const response = await fetch(
         "https://api.studystream.live/api/users/me/premium/pinned-by-users-now",
         { method: "GET", headers: { "Authorization": `Bearer ${token}` } });
+    if (response.status === 403) {
+        throw new PremiumUserFeatureForbidden("Failed to retrieve pinning users");
+    }
     return response.ok ? await response.json() : [];
 }
 
@@ -287,7 +312,7 @@ async function getUserInfo(userId, token) {
         { method: "GET", headers: { "Authorization": `Bearer ${token}` } });
     let user = response.ok ? await response.json() : null;
     if (user != null) {
-        const rooms = await getSessionStorageData("rooms");
+        const rooms = await getRooms();
         user = {
             id: user.id,
             displayName: user.displayName,
@@ -304,7 +329,7 @@ async function getUserInfo(userId, token) {
 
 async function getFollowedUsersInRooms(token) {
     const followedUsers = [];
-    const rooms = await getSessionStorageData("rooms");
+    const rooms = await getRooms();
     if (rooms?.length > 0) {
         const favouriteUserIds = await getFavouriteUserIds(token);
         for (let room of rooms) {
@@ -335,30 +360,47 @@ async function stopAlarm(alarmName) {
     await chrome.alarms.clear(alarmName);
 }
 
-async function getRoomInfo() {
-    const response = await fetch(
-        "https://api.studystream.live/api/focus-rooms/active/web-app-user",
-        { method: "GET" });
-    const roomInfo = response.ok ? await response.json() : [];
-    const rooms = [];
-    roomInfo.forEach(room => {
-       rooms.push({
-           id: room.roomId,
-           name: room.roomDisplayName,
-           url: room.roomUrl
-       });
-    });
-    await setSessionStorageData("rooms", rooms);
+async function getRooms() {
+    let rooms = await getSessionStorageData("rooms");
+    if (rooms == null || rooms.length === 0) {
+        const response = await fetch(
+            "https://api.studystream.live/api/focus-rooms/active/web-app-user",
+            {method: "GET"});
+        rooms = response.ok ? await response.json() : [];
+        rooms = rooms.map(room => {
+            return {
+                id: room.roomId,
+                name: room.roomDisplayName,
+                url: `https://app.studystream.live${room.roomUrl}`
+            };
+        });
+        await setSessionStorageData("rooms", rooms);
+    }
+    return rooms;
 }
 
-async function getCurrentUserInfo(token) {
+async function getPremiumSubscriptionTierIds(token) {
+    let premiumSubTierIds = await getSessionStorageData("premiumSubscriptionTierIds");
+    if (premiumSubTierIds == null || premiumSubTierIds.length === 0) {
+        const response = await fetch(
+            "https://api.studystream.live/api/subscription-tiers/active",
+            {method: "GET", headers: { "Authorization": `Bearer ${token}` }});
+        const subTiers = response.ok ? await response.json() : [];
+        premiumSubTierIds = subTiers.filter(tier => tier.includePremiumFeatures).map(tier => tier.id);
+        await setSessionStorageData("premiumSubscriptionTierIds", premiumSubTierIds);
+    }
+    return premiumSubTierIds;
+}
+
+async function isPremiumSubscription(token) {
     const response = await fetch(
         "https://api.studystream.live/api/accounts/me",
         { method: "GET", headers: { "Authorization": `Bearer ${token}` } });
-    return response.ok ? await getUserInfo((await response.json()).id, token) : null;
+    const currentUserInfo = response.ok ? await response.json() : null;
+    return currentUserInfo?.subscription?.subscriptionTierId != null
+        && (await getPremiumSubscriptionTierIds(token)).includes(currentUserInfo?.subscription?.subscriptionTierId);
 }
 
 (async () => {
-    await getRoomInfo();
     await onPageLoaded();
 })();

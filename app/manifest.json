@@ -1,7 +1,7 @@
 {
   "name": "StudyStream Buddies",
   "description": "Shows online followed users in StudyStream focus rooms and displays notifications.",
-  "version": "0.3.3",
+  "version": "0.3.4",
   "manifest_version": 3,
   "icons": {
     "16": "images/icon-16.png",
