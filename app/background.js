@@ -237,7 +237,13 @@ async function getPinningUsers(token) {
 }
 
 async function getToken() {
-    return await getStudyStreamLocalStorageData("token");
+    let token = await getStudyStreamLocalStorageData("token");
+    if (token != null) {
+        await setLocalStorageData("token", token);
+    } else {
+        token = await getLocalStorageData("token");
+    }
+    return token;
 }
 
 async function getTheme() {
@@ -289,6 +295,20 @@ async function removeSessionStorageData(key) {
         key += "-incognito";
     }
     await chrome.storage.session.remove(key);
+}
+
+async function getLocalStorageData(key, sharedWithIncognito = false) {
+    if (!sharedWithIncognito && chrome.extension.inIncognitoContext) {
+        key += "-incognito";
+    }
+    return (await chrome.storage.local.get(key))[key];
+}
+
+async function setLocalStorageData(key, value, sharedWithIncognito = false) {
+    if (!sharedWithIncognito && chrome.extension.inIncognitoContext) {
+        key += "-incognito";
+    }
+    await chrome.storage.local.set({ [key]: value });
 }
 
 async function getFollowedUserIdsInRoom(roomId, token) {
