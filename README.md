@@ -14,14 +14,19 @@ that provides the following additional features:
 
 This extension is not available in the Chrome Web Store. To install it:
 
-- Clone this repository to a local directory.
+- Download the source code ZIP file for the [latest release](https://github.com/mpaulse/studystream-buddies/releases/latest)
+  and extract it into a local directory of your choice. Alternatively, clone this repository to a
+  local directory.
 - Go to the **Extensions** page by clicking the **Extensions** toolbar button and selecting
   **Manage Extensions**. Alternatively, select **Extensions > Manage Extensions** from
   the web browser menu or enter "chrome://extensions" into the URL search bar.
 - Enable **Developer mode**.
 - Click the **Load unpacked** button.
-- Select the **app** directory in this repository.
+- Select the **app** directory that was extracted from the source code ZIP file or pulled
+  from this repository.
 
 To install an updated version:
-- Pull the latest updates from this repository.
+- Download the source code ZIP file for the [latest release](https://github.com/mpaulse/studystream-buddies/releases/latest)
+  and extract it into the same local directory as before. Alternatively, pull
+  the latest updates from this repository.
 - Click the **Reload** button for the extension on the **Extensions** page.
