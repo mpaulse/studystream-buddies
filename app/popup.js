@@ -131,6 +131,10 @@ function createBuddyElement(buddy) {
         removeDescendent(buddyElement, ".buddy-follower");
     }
 
+    if (!buddy.camEnabled) {
+        removeDescendent(buddyElement, ".cam-indicator");
+    }
+
     buddyElement.querySelector(".room-name").textContent = buddy.room.name;
 
     return buddyElement;

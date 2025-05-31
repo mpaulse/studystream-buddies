@@ -7,6 +7,7 @@ that provides the following additional features:
 - Displays a notification when a favourite followed user enters a focused room.
 - Highlights followed users who are currently pinning you (requires a premium subscription).
 - Displays a notification when anyone pins you (requires a premium subscription).
+- Shows which followed users have their cameras enabled (requires a premium subscription).
 
 ![Popup screenshot](screenshots/popup.png)
 

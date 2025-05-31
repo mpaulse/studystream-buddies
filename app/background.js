@@ -169,6 +169,8 @@ async function refreshUsers(token = null) {
             userList.forEach(user => user.pinner = pinningUserIds.includes(user.id));
         }
 
+        await setUserCamStatus(userList, token);
+
         await setSessionStorageData("usersInRooms", userList);
 
         await startAlarm("refreshUsers");
@@ -192,8 +194,7 @@ async function getUsers(refresh) {
 }
 
 async function checkPinningUsers(token) {
-    if ((await getSessionStorageData("premiumUser")) !== true
-            || (await getCurrentRoom()) == null) {
+    if ((await getSessionStorageData("premiumUser")) !== true || (await getCurrentRoom()) == null) {
         return [];
     }
 
@@ -234,6 +235,35 @@ async function getPinningUsers(token) {
         throw new PremiumUserFeatureForbidden("Failed to retrieve pinning users");
     }
     return response.ok ? await response.json() : [];
+}
+
+async function setUserCamStatus(userList, token) {
+    if ((await getSessionStorageData("premiumUser")) !== true || (await getCurrentRoom()) == null) {
+        return;
+    }
+
+    try {
+        for (let user of userList) {
+            user.camEnabled = await isUserCamEnabled(user.id, token);
+        }
+    } catch (error) {
+        if (error instanceof PremiumUserFeatureForbidden) {
+            await removeSessionStorageData("premiumUser");
+        } else {
+            throw error;
+        }
+    }
+}
+
+async function isUserCamEnabled(userId, token) {
+    const response = await fetch(
+        `https://api.studystream.live/api/users/${userId}/focus-room/video-sessions`,
+        { method: "GET", headers: { "Authorization": `Bearer ${token}` } });
+    if (response.status === 403) {
+        throw new PremiumUserFeatureForbidden("Failed check if user cam is enabled");
+    }
+    const videoSessions = response.ok ? await response.json() : [];
+    return videoSessions.length > 0 && videoSessions[0].end == null
 }
 
 async function getToken() {

@@ -204,6 +204,10 @@ button.primary:hover {
     height: 10px;
 }
 
+.cam-indicator {
+    width: 20px;
+}
+
 .buddy-follower {
     font-weight: 400;
     font-size: 13px;
