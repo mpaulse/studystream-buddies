@@ -238,7 +238,7 @@ async function getPinningUsers(token) {
 }
 
 async function setUserCamStatus(userList, token) {
-    if ((await getSessionStorageData("premiumUser")) !== true || (await getCurrentRoom()) == null) {
+    if ((await getSessionStorageData("premiumUser")) !== true) {
         return;
     }
 
