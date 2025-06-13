@@ -123,7 +123,13 @@ function createBuddyElement(buddy) {
         const flagElement = buddyElement.querySelector(".buddy-country-flag")
         flagElement.title = buddy.countryCode;
         flagElement.src = `https://app.studystream.live/assets/icons/flags/${buddy.countryCode.toLowerCase()}.svg`;
+        if (moment.tz.zonesForCountry(buddy.countryCode, true).find(tz => tz.offset * -1 === buddy.timezoneOffset) == null) {
+            setBuddyTimezone(buddyElement, buddy.timezoneOffset);
+        } else {
+            removeDescendent(buddyElement, ".buddy-timezone");
+        }
     } else {
+        setBuddyTimezone(buddyElement, buddy.timezoneOffset)
         removeDescendent(buddyElement, ".buddy-country-flag");
     }
 
@@ -138,6 +144,11 @@ function createBuddyElement(buddy) {
     buddyElement.querySelector(".room-name").textContent = buddy.room.name;
 
     return buddyElement;
+}
+
+function setBuddyTimezone(buddyElement, timezoneOffset) {
+    buddyElement.querySelector(".buddy-timezone").textContent
+        = `UTC${moment().utcOffset(timezoneOffset).format('Z')}`;
 }
 
 function removeDescendent(element, descendentSelector) {

@@ -371,7 +371,8 @@ async function getUserInfo(userId, token) {
             avatarUrl: user.avatarThumbUrl ?? "images/icon-128.png",
             follower: user.followsMe,
             premiumUser: user.includePremiumFeatures,
-            room: rooms?.find(room => room.id === user.currentRoomId)
+            room: rooms?.find(room => room.id === user.currentRoomId),
+            timezoneOffset: user.timezoneUtcOffset
         }
     }
     return user;
