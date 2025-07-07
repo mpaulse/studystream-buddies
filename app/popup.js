@@ -147,8 +147,12 @@ function createBuddyElement(buddy) {
 }
 
 function setBuddyTimezone(buddyElement, timezoneOffset) {
-    buddyElement.querySelector(".buddy-timezone").textContent
-        = `UTC${moment().utcOffset(timezoneOffset).format('Z')}`;
+    if (timezoneOffset != null) {
+        buddyElement.querySelector(".buddy-timezone").textContent
+            = `UTC${moment().utcOffset(timezoneOffset).format('Z')}`;
+    } else {
+        removeDescendent(buddyElement, ".buddy-timezone");
+    }
 }
 
 function removeDescendent(element, descendentSelector) {

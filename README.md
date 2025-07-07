@@ -8,8 +8,10 @@ that provides the following additional features:
 - Highlights followed users who are currently pinning you (requires a premium subscription).
 - Displays a notification when anyone pins you (requires a premium subscription).
 - Shows which followed users have their cameras enabled (requires a premium subscription).
-- Always shows the premium tick for followed users with premium subscriptions, even if the tick is hidden.
-- Shows the timezones of followed users with unset countries or countries that do not correspond to the selected timezone.
+- Always shows the premium tick for followed users with premium subscriptions, even if the
+  tick is hidden.
+- Shows the non-private timezones of followed users who do not have their countries set in
+  their profiles, or if their countries do not match their timezone settings.
 
 ![Popup screenshot](screenshots/popup.png)
 
