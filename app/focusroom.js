@@ -16,17 +16,30 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-const classObserver = new MutationObserver(mutations => {
+const attrObserver = new MutationObserver(mutations => {
     for (let mutation of mutations) {
-        if (mutation.target.nodeName.toLowerCase() === "video"
-                && mutation.target.classList.contains("privacy-blur")) {
-            mutation.target.classList.remove("privacy-blur");
+        const element = mutation.target
+        if (element.nodeName.toLowerCase() === "video") {
+            switch (mutation.attributeName) {
+                case "class":
+                    if (element.classList.contains("privacy-blur")) {
+                        element.classList.remove("privacy-blur");
+                    }
+                    break;
+                case "style":
+                    let style = element.getAttribute("style") ?? "";
+                    if (style.includes("blur(30px)")) {
+                        style = style.replace("blur(30px)", "blur(0.301px)");
+                        element.setAttribute("style", style);
+                    }
+                    break;
+            }
         }
     }
 });
 
-classObserver.observe(document.body, {
+attrObserver.observe(document.body, {
     childList: true,
     subtree: true,
-    attributeFilter: ["class"]
+    attributeFilter: ["class", "style"]
 });
