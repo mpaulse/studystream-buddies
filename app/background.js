@@ -18,7 +18,7 @@
 
 chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
     if (changeInfo.status === "complete" && tab.url?.startsWith("https://app.studystream.live")) {
-        await onPageLoaded();
+        await onPageLoaded(tab);
     }
 });
 
@@ -64,7 +64,7 @@ async function isLoggedIn() {
     return await getSessionStorageData("loggedIn");
 }
 
-async function onPageLoaded() {
+async function onPageLoaded(tab) {
     const token = await getToken();
     const prevLoggedIn = await getSessionStorageData("loggedIn");
     if (token != null) {
@@ -74,6 +74,12 @@ async function onPageLoaded() {
         }
     } else if (token == null && prevLoggedIn) {
         await onLogout();
+    }
+    if (tab?.url?.startsWith("https://app.studystream.live/focus/")) {
+        await chrome.scripting.executeScript({
+            target: { tabId: tab.id },
+            files: ["focusroom.js"]
+        });
     }
 }
 

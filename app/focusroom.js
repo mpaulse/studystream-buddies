@@ -16,30 +16,46 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-const attrObserver = new MutationObserver(mutations => {
-    for (let mutation of mutations) {
-        const element = mutation.target
-        if (element.nodeName.toLowerCase() === "video") {
-            switch (mutation.attributeName) {
-                case "class":
-                    if (element.classList.contains("privacy-blur")) {
-                        element.classList.remove("privacy-blur");
+if (window.ssBuddiesFocusRoomInitialized == null) {
+    window.ssBuddiesFocusRoomInitialized = true;
+
+    const observer = new MutationObserver(mutations => {
+        for (let mutation of mutations) {
+            if (mutation.type === "attributes") {
+                const element = mutation.target
+                if (element.nodeName.toLowerCase() === "video") {
+                    switch (mutation.attributeName) {
+                        case "class":
+                            if (element.classList.contains("privacy-blur")) {
+                                element.classList.remove("privacy-blur");
+                            }
+                            break;
+                        case "style":
+                            let style = element.getAttribute("style") ?? "";
+                            if (style.includes("blur(30px)")) {
+                                style = style.replace("blur(30px)", "blur(0.301px)");
+                                element.setAttribute("style", style);
+                            }
+                            break;
                     }
-                    break;
-                case "style":
-                    let style = element.getAttribute("style") ?? "";
-                    if (style.includes("blur(30px)")) {
-                        style = style.replace("blur(30px)", "blur(0.301px)");
-                        element.setAttribute("style", style);
+                }
+            } else if (mutation.type === "childList") {
+                for (node of mutation.addedNodes) {
+                    if (node.nodeName.toLowerCase() === "video" && node.classList.contains("privacy-blur")) {
+                        node.classList.remove("privacy-blur");
                     }
-                    break;
+                }
             }
         }
-    }
-});
+    });
 
-attrObserver.observe(document.body, {
-    childList: true,
-    subtree: true,
-    attributeFilter: ["class", "style"]
-});
+    observer.observe(document.body, {
+        childList: true,
+        subtree: true,
+        attributeFilter: ["class", "style"]
+    });
+
+    document.querySelectorAll("video.privacy-blur").forEach(video => {
+        video.classList.remove("privacy-blur");
+    });
+}
