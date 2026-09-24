@@ -1,6 +1,6 @@
 /*
  * StudyStream Buddies
- * Copyright (C) 2025 Marlon Paulse
+ * Copyright (C) 2026 Marlon Paulse
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,46 +16,42 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-if (window.ssBuddiesFocusRoomInitialized == null) {
-    window.ssBuddiesFocusRoomInitialized = true;
+(() => {
+    cleanUpRoom();
+    initRoom();
 
-    const observer = new MutationObserver(mutations => {
-        for (let mutation of mutations) {
-            if (mutation.type === "attributes") {
-                const element = mutation.target
-                if (element.nodeName.toLowerCase() === "video") {
-                    switch (mutation.attributeName) {
-                        case "class":
-                            if (element.classList.contains("privacy-blur")) {
-                                element.classList.remove("privacy-blur");
-                            }
-                            break;
-                        case "style":
-                            let style = element.getAttribute("style") ?? "";
-                            if (style.includes("blur(30px)")) {
-                                style = style.replace("blur(30px)", "blur(0.301px)");
-                                element.setAttribute("style", style);
-                            }
-                            break;
+    function initRoom() {
+        let attempts = 0;
+        const intervalRef = setInterval(() => {
+            if (window.LivekitRoom?.state === "connected") {
+                clearInterval(intervalRef);
+                if (window.ssBuddies == null) {
+                    window.ssBuddies = {
+                        room: window.LivekitRoom,
+                        participantsChangedSub: window.LivekitRoom.participantsChanged.subscribe(() => updateRoomParticipants())
                     }
+                    updateRoomParticipants();
                 }
-            } else if (mutation.type === "childList") {
-                for (node of mutation.addedNodes) {
-                    if (node.nodeName.toLowerCase() === "video" && node.classList.contains("privacy-blur")) {
-                        node.classList.remove("privacy-blur");
-                    }
-                }
+            } else if (++attempts >= 150) {
+                clearInterval(intervalRef);
             }
+        }, 200);
+    }
+
+    function updateRoomParticipants() {
+        window.ssBuddies?.room?.remoteParticipants?.forEach(participant => {
+            participant.pinCountHidden = false;
+            if (participant.userInfo != null) {
+                participant.userInfo.whoCanSeeYourVideo = "Everyone";
+            }
+        });
+    }
+
+    function cleanUpRoom() {
+        if (window.ssBuddies != null) {
+            window.ssBuddies.participantsChangedSub?.unsubscribe();
+            window.ssBuddies = null;
         }
-    });
+    }
 
-    observer.observe(document.body, {
-        childList: true,
-        subtree: true,
-        attributeFilter: ["class", "style"]
-    });
-
-    document.querySelectorAll("video.privacy-blur").forEach(video => {
-        video.classList.remove("privacy-blur");
-    });
-}
+})();

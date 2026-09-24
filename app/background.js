@@ -1,6 +1,6 @@
 /*
  * StudyStream Buddies
- * Copyright (C) 2025 Marlon Paulse
+ * Copyright (C) 2026 Marlon Paulse
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -78,7 +78,8 @@ async function onPageLoaded(tab) {
     if (tab?.url?.startsWith("https://app.studystream.live/focus/")) {
         await chrome.scripting.executeScript({
             target: { tabId: tab.id },
-            files: ["focusroom.js"]
+            files: ["focusroom.js"],
+            world: "MAIN"
         });
     }
 }

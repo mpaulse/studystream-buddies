@@ -13,6 +13,7 @@ that provides the following additional features:
 - Shows the non-private timezones of followed users who do not have their countries set in
   their profiles, or if their countries do not match their timezone settings.
 - Removes video blurring, allowing you to see users' video tiles regardless of their settings.
+- Unhides pin counts.
 
 ![Popup screenshot](screenshots/popup.png)
 
