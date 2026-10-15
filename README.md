@@ -14,6 +14,7 @@ that provides the following additional features:
   their profiles, or if their countries do not match their timezone settings.
 - Removes video blurring, allowing you to see users' video tiles regardless of their settings.
 - Unhides pin counts.
+- Enlarge anyone's video tile.
 
 ![Popup screenshot](screenshots/popup.png)
 

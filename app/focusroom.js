@@ -31,6 +31,7 @@
                         participantsChangedSub: window.LivekitRoom.participantsChanged.subscribe(() => updateRoomParticipants())
                     }
                     updateRoomParticipants();
+                    overrideHttpResponses();
                 }
             } else if (++attempts >= 150) {
                 clearInterval(intervalRef);
@@ -50,8 +51,41 @@
     function cleanUpRoom() {
         if (window.ssBuddies != null) {
             window.ssBuddies.participantsChangedSub?.unsubscribe();
+            XMLHttpRequest.prototype.open = window.ssBuddies.origXhrOpen;
             window.ssBuddies = null;
         }
+    }
+
+    function overrideHttpResponses() {
+        const overrides = [
+            {
+                method: "POST",
+                urlSnippet: "/view/video-tile",
+                status: 204
+            }
+        ]
+
+        window.ssBuddies.origXhrOpen = XMLHttpRequest.prototype.open;
+
+        XMLHttpRequest.prototype.open = function (method, url, ...rest) {
+            this.__response_override = overrides.find(o => o.method === method && url.includes(o.urlSnippet));
+            return window.ssBuddies.origXhrOpen.call(this, method, url, ...rest);
+        };
+
+        const overrideProperty = (name, applyOverride) => {
+            const orig = Object.getOwnPropertyDescriptor(XMLHttpRequest.prototype, name);
+            Object.defineProperty(XMLHttpRequest.prototype, name, {
+                configurable: true,
+                enumerable: orig.enumerable,
+                get() {
+                    return this.__response_override && this.readyState === XMLHttpRequest.DONE
+                        ? applyOverride(this.__response_override)
+                        : orig.get.call(this);
+                },
+            });
+        };
+
+        overrideProperty("status", (override) => override.status);
     }
 
 })();
