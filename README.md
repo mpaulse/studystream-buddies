@@ -12,10 +12,10 @@ that provides the following additional features:
   tick is hidden.
 - Shows the non-private timezones of followed users who do not have their countries set in
   their profiles, or if their countries do not match their timezone settings.
-- Removes video blurring, allowing you to see users' video tiles regardless of their settings.
-- Unhides pin counts.
-- Enlarge anyone's video tile.
-
+- Removes video blurring, allowing you to see anyone's video tiles regardless of their privacy settings.
+- Shows everyone's pin counts, regardless of their privacy settings.
+- Allows you to pin anyone and enlarge anyone's video tile regardless of their privacy settings.
+  
 ![Popup screenshot](screenshots/popup.png)
 
 ## How to install

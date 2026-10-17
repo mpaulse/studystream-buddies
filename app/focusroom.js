@@ -60,6 +60,11 @@
         const overrides = [
             {
                 method: "POST",
+                urlSnippet: "/pin",
+                status: 200
+            },
+            {
+                method: "POST",
                 urlSnippet: "/view/video-tile",
                 status: 204
             }
