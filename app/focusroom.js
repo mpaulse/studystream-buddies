@@ -44,6 +44,9 @@
             participant.pinCountHidden = false;
             if (participant.userInfo != null) {
                 participant.userInfo.whoCanSeeYourVideo = "Everyone";
+                if (participant.userInfo.roomSettings != null) {
+                    participant.userInfo.roomSettings.disablePinning = false;
+                }
             }
         });
     }
