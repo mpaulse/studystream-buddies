@@ -17,22 +17,51 @@
  */
 
 (() => {
-    cleanUpRoom();
-    initRoom();
+    setupRoom();
 
-    function initRoom() {
+    function setupRoom() {
+        if (window.__ssBuddies == null) {
+            window.__ssBuddies = {
+                room: null
+            };
+            Object.defineProperty(Object.prototype, "room", {
+                configurable: true,
+                enumerable: false,
+                set(value) {
+                    if (value?.participantsChanged != null) {
+                        window.__ssBuddies.room = value;
+                        Object.defineProperty(this, "room", {
+                            configurable: true, enumerable: true,
+                            get() {
+                                return window.__ssBuddies.room;
+                            },
+                            set(nextValue) {
+                                window.__ssBuddies.room = nextValue;
+                                installRoomOverrides();
+                            }
+                        });
+                        installRoomOverrides();
+                    } else {
+                        Object.defineProperty(this, "room", {
+                            value, writable: true, configurable: true, enumerable: true,
+                        });
+                    }
+                },
+            });
+        }
+    }
+
+    function installRoomOverrides() {
         let attempts = 0;
         const intervalRef = setInterval(() => {
-            if (window.LivekitRoom?.state === "connected") {
+            if (window.__ssBuddies.room.state === "connected") {
                 clearInterval(intervalRef);
-                if (window.ssBuddies == null) {
-                    window.ssBuddies = {
-                        room: window.LivekitRoom,
-                        participantsChangedSub: window.LivekitRoom.participantsChanged.subscribe(() => updateRoomParticipants())
-                    }
-                    updateRoomParticipants();
-                    overrideHttpResponses();
-                }
+                window.__ssBuddies.participantsChangedSub?.unsubscribe();
+                window.__ssBuddies.participantsChangedSub =
+                    window.__ssBuddies.room.participantsChanged.subscribe(
+                        () => updateRoomParticipants())
+                updateRoomParticipants();
+                overrideHttpResponses();
             } else if (++attempts >= 150) {
                 clearInterval(intervalRef);
             }
@@ -40,7 +69,7 @@
     }
 
     function updateRoomParticipants() {
-        window.ssBuddies?.room?.remoteParticipants?.forEach(participant => {
+        window.__ssBuddies.room.remoteParticipants?.forEach(participant => {
             participant.pinCountHidden = false;
             if (participant.userInfo != null) {
                 participant.userInfo.whoCanSeeYourVideo = "Everyone";
@@ -51,15 +80,12 @@
         });
     }
 
-    function cleanUpRoom() {
-        if (window.ssBuddies != null) {
-            window.ssBuddies.participantsChangedSub?.unsubscribe();
-            XMLHttpRequest.prototype.open = window.ssBuddies.origXhrOpen;
-            window.ssBuddies = null;
-        }
-    }
-
     function overrideHttpResponses() {
+        if (window.__ssBuddies.httpHooked) {
+            return;
+        }
+        window.__ssBuddies.httpHooked = true;
+
         const overrides = [
             {
                 method: "POST",
@@ -73,11 +99,10 @@
             }
         ]
 
-        window.ssBuddies.origXhrOpen = XMLHttpRequest.prototype.open;
-
+        const origXhrOpen = XMLHttpRequest.prototype.open;
         XMLHttpRequest.prototype.open = function (method, url, ...rest) {
             this.__response_override = overrides.find(o => o.method === method && url.includes(o.urlSnippet));
-            return window.ssBuddies.origXhrOpen.call(this, method, url, ...rest);
+            return origXhrOpen.call(this, method, url, ...rest);
         };
 
         const overrideProperty = (name, applyOverride) => {
